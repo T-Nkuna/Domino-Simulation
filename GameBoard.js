@@ -34,9 +34,63 @@ export class GameBoard{
         return gameBoard;
     }
 
-    //attempts to play a tile from tilePositions
+    //attempts to play a tile from tilePositions and returns an updated version of tilePositions 
     playTile(tilePositions){
+        let checkValidPosition = this.validTileExists(tilePositions);
+        if(checkValidPosition.positionToPlay!==-1){
+            tilePositions = tilePositions.filter(pos=>pos!==checkValidPosition.positionToPlay);
+            let tileToPlay = this.stock[checkValidPosition.positionToPlay];
+            if(checkValidPosition.isLastEnd)
+            {
+                
+                if(this.gameState.length==1){
+                    if(this.gameState[0][1]!=tileToPlay[0])
+                    {
+                        this.gameState.push(this.flipTile(tileToPlay));
+                    }
+                    else
+                    {
+                        this.gameState.push(tileToPlay);
+                    }
+                    tilePositions = tilePositions.filter(pos=>pos!==checkValidPosition.positionToPlay);
+                }
+                else
+                {
+                    if(this.gameState[this.gameState.length-1][1] ==tileToPlay[0] || this.gameState[this.gameState.length-1][1] ==tileToPlay[1])
+                    {
+                        //right end point match
+                        if(this.hasEquivalentEndPoints(this.gameState[this.gameState.length-1],tileToPlay))
+                        {
+                            this.gameState.push(this.flipTile(tileToPlay));
+                        }
+                        else
+                        {
+                            this.gameState.push(tileToPlay);
+                        }
+                        tilePositions = tilePositions.filter(pos=>pos!==checkValidPosition.positionToPlay);
+                    }
+                }
+               
+            }
+            else
+            {
+               
+                if(this.gameState[0][0]==tileToPlay[1])
+                {
+                    this.gameState.unshift(tileToPlay);
+                    tilePositions = tilePositions.filter(pos=>pos!==checkValidPosition.positionToPlay);
+                }
+                else if(this.gameState[0][0]==this.flipTile(tileToPlay)[1])
+                {
+                    this.gameState.unshift(this.flipTile(tileToPlay));
+                    tilePositions = tilePositions.filter(pos=>pos!==checkValidPosition.positionToPlay);
+                
+                }
+                //prepend tile to gameState
+            }
+        }
 
+        return tilePositions;
     }
  
     /*checks whether a valid tile which can be played exists within tilePositions
@@ -65,7 +119,7 @@ export class GameBoard{
             }
 
         }
-        else if(this.gameState.lengh==1){
+        else if(this.gameState.length==1){
             
             for(let tilePosition of tilePositions)
             {
@@ -81,11 +135,34 @@ export class GameBoard{
     }
 
     //Determines wheter tileArr1 and tileArr2 have identical endpoints
+    //computes the intersection of tileArr1 and tileArr2
     hasIdenticalEndPoints(tileArr1,tileArr2){
         return (tileArr1.filter(endPoint=>{
             return tileArr2.indexOf(endPoint)!=-1;
         }).length>0);
     }
+    //determines whether the intersection occures at similar indices
+    hasEquivalentEndPoints(tileArr1,tileArr2)
+    {
+        return this.hasIdenticalEndPoints(tileArr1,tileArr2) && (tileArr1[0]===tileArr2[0] || tileArr1[1]===tileArr2[1]);
+    }
+
+    //determines whether tile2 can be placed adjacent to tile1 and which placement
+    //operation to use; 
+     canBePlaced(tile1,tile2){
+        if(tile1[1]==tile2[0]){
+            return ({
+                canPlace:true,
+                operation:"append"
+            });
+        }
+        else if(tile2[1]==tile1[0]){
+            return ({
+                canBePlaced:true,
+                operation:"prepend"
+            })
+        }
+     }
     
 
         //returns seven randomly generated indexes within the range 0-27
