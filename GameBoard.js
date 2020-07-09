@@ -37,9 +37,10 @@ export class GameBoard{
     //attempts to play a tile from tilePositions and returns an updated version of tilePositions 
     playTile(tilePositions){
         let checkValidPosition = this.validTileExists(tilePositions);
+        let tileToPlay = [];
         if(checkValidPosition.positionToPlay!==-1){
             
-            let tileToPlay = this.stock[checkValidPosition.positionToPlay];
+            tileToPlay = this.stock[checkValidPosition.positionToPlay];
            
             if(checkValidPosition.isLastEnd && checkValidPosition.isFirstEnd)
             {
@@ -70,11 +71,11 @@ export class GameBoard{
             }
         }
 
-        return tilePositions;
+        return ({updatedTilePositions:tilePositions,playedTile:tileToPlay});
     }
  
     /*checks whether a valid tile which can be played exists within tilePositions
-     and returns and object which specifies the positionToPlay and a property that
+     and returns an object which specifies the positionToPlay and a property that
      determines at which end of the game state should the position be played 
      if positionToPlay equals -1; then no valid position exists.
     */
@@ -82,6 +83,7 @@ export class GameBoard{
         let positionToPlay = -1;
         let isLastEnd = true;
         let isFirstEnd = false;
+        let positionsToPlay = [];
         if(this.gameState.length>=0)
         {
             //checking both ends of the game state for a valid position to play
@@ -96,13 +98,31 @@ export class GameBoard{
                     positionToPlay = tilePosition;
                     isLastEnd = lastEndIsIdentical;
                     isFirstEnd = firstEndIsIdentical;
-                    break;
+                    positionsToPlay.push({positionToPlay,isFirstEnd,isLastEnd});
+                
                 }
             }
 
         }
 
-        return ({positionToPlay,isLastEnd,isFirstEnd});
+        positionsToPlay =  positionsToPlay.filter(pos=>{
+            if(pos.isFirstEnd && pos.isLastEnd)
+            {
+                return this.canAppend(this.stock[pos.positionToPlay]) || this.canPrepend(this.stock[pos.positionToPlay]);
+            }
+            else if(pos.isLastEnd){
+                return this.canAppend(this.stock[pos.positionToPlay]);
+            }
+            else if(pos.isFirstEnd){
+                return this.canPrepend(this.stock[pos.positionToPlay]);
+            }
+            else
+            {
+                return false;
+            }
+        });
+
+        return positionsToPlay.length>0?positionsToPlay[0]:({positionToPlay:-1,isLastEnd:false,isFirstEnd:false});
     }
 
     //Determines wheter tileArr1 and tileArr2 have identical endpoints
@@ -161,37 +181,34 @@ export class GameBoard{
         //attempts to append tileArr to gameState if it is valid;
         //returns true on success otherwise returns false
         appendToGameState(tileArr){
-            let appended=false;
-            let relativeToTile = this.gameState[this.gameState.length-1];
-            if(relativeToTile[1]==tileArr[0]){
+            let canAppend=this.canAppend(tileArr);
+            if(canAppend){
                 this.gameState.push(tileArr);
-                appended =true;
             }
-            else if(relativeToTile[1] ==this.flipTile(tileArr.map(x=>x))[0])
-            {
-               // this.gameState.push(this.flipTile(tileArr.map(x=>x)));
-                //appended =true;
-            }
-            return appended;
+            return canAppend;
         }
 
         //attempts to prepend tileArr1 to gameState;
         //returns true on success otherwise returns false
         prependToGameState(tileArr){
-            let prepended = false;
-            let relativeToTile = this.gameState[0];
-            if(relativeToTile[0]==tileArr[1])
+            let canPrepend = this.canPrepend(tileArr);
+            if(canPrepend)
             {
                 this.gameState.unshift(tileArr);
-                prepended = true;
             }
-            else if(relativeToTile[0]==this.flipTile(tileArr.map(x=>x))[1])
-            {
-               // this.gameState.unshift(this.flipTile(tileArr.map(x=>x)));
-               // prepended =true;
-            }
+         
+            return canPrepend;
+        }
 
-            return prepended;
+        
+        canPrepend(tileArr){
+            let relativeToTile = this.gameState[0];
+            return relativeToTile[0]==tileArr[1];
+        }
+
+        canAppend(tileArr){
+            let relativeToTile = this.gameState[this.gameState.length-1];
+            return (relativeToTile[1]==tileArr[0]);
         }
 
 }
